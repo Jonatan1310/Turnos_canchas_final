@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --brand-primary: #059669;
+    --brand-primary-rgb: 5, 150, 105;
+    --brand-secondary: #10b981;
+    --brand-secondary-rgb: 16, 185, 129;
+  }
+
+  html {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+}
+
+/* Dynamic Brand Utility Classes */
+.bg-brand-primary {
+  background-color: var(--brand-primary, #059669) !important;
+}
+
+.bg-brand-primary\/10 {
+  background-color: rgba(var(--brand-primary-rgb, 5, 150, 105), 0.1) !important;
+}
+
+.bg-brand-primary\/20 {
+  background-color: rgba(var(--brand-primary-rgb, 5, 150, 105), 0.2) !important;
+}
+
+.text-brand-primary {
+  color: var(--brand-primary, #059669) !important;
+}
+
+.border-brand-primary {
+  border-color: var(--brand-primary, #059669) !important;
+}
+
+.hover\:bg-brand-primary:hover {
+  background-color: var(--brand-primary, #059669) !important;
+}
+
+.hover\:text-brand-primary:hover {
+  color: var(--brand-primary, #059669) !important;
+}
+
+.hover\:border-brand-primary:hover {
+  border-color: var(--brand-primary, #059669) !important;
+}
+
+.shadow-brand {
+  box-shadow: 0 10px 25px -5px rgba(var(--brand-primary-rgb, 5, 150, 105), 0.3), 0 8px 10px -6px rgba(var(--brand-primary-rgb, 5, 150, 105), 0.2) !important;
+}
+
+.shadow-brand-sm {
+  box-shadow: 0 4px 12px rgba(var(--brand-primary-rgb, 5, 150, 105), 0.2) !important;
+}
+
+/* Custom sleek scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.4);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(71, 85, 105, 0.6);
+}

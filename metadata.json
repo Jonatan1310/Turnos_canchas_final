@@ -1,0 +1,6 @@
+{
+  "name": "Sistema de Reservas de Canchas",
+  "description": "Sistema completo de gestión y reserva de canchas deportivas con calendario interactivo, WhatsApp, lista de espera, cobros y reportes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
