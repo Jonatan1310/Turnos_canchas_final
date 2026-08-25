@@ -11,13 +11,17 @@ import {
   ShieldCheck,
   Building2,
   UserCheck,
-  Layers,
-  Sparkles,
   Smartphone,
-  CheckCircle2,
+  Sparkles,
+  LogIn,
 } from "lucide-react";
 import { TenantComplex } from "../../types";
-import { buildComplexAdminUrl, buildComplexPortalUrl } from "../../lib/slugify";
+import {
+  buildComplexAdminUrl,
+  buildComplexPortalUrl,
+  copyToClipboard,
+} from "../../lib/slugify";
+import { useApp } from "../../context/AppContext";
 
 interface SuperAdminShareLinksModalProps {
   complex: TenantComplex | null;
@@ -28,6 +32,7 @@ interface SuperAdminShareLinksModalProps {
 export const SuperAdminShareLinksModal: React.FC<
   SuperAdminShareLinksModalProps
 > = ({ complex, isOpen, onClose }) => {
+  const { switchComplex } = useApp();
   const [copiedAdmin, setCopiedAdmin] = useState(false);
   const [copiedPortal, setCopiedPortal] = useState(false);
   const [copiedBoth, setCopiedBoth] = useState(false);
@@ -48,46 +53,42 @@ export const SuperAdminShareLinksModal: React.FC<
     id: complex.id,
   });
 
-  const handleCopyAdmin = () => {
-    navigator.clipboard.writeText(adminUrl);
+  const handleCopyAdmin = async () => {
+    await copyToClipboard(adminUrl);
     setCopiedAdmin(true);
     setTimeout(() => setCopiedAdmin(false), 2500);
   };
 
-  const handleCopyPortal = () => {
-    navigator.clipboard.writeText(portalUrl);
+  const handleCopyPortal = async () => {
+    await copyToClipboard(portalUrl);
     setCopiedPortal(true);
     setTimeout(() => setCopiedPortal(false), 2500);
   };
 
-  const handleCopyBoth = () => {
+  const handleCopyBoth = async () => {
     const fullText = `*Accesos Oficiales de ${complex.name}*\n\n🔑 *Portal Administrador (Gestión y Control):*\n${adminUrl}\n\n🌐 *Portal de Clientes (Reservas Online 24/7):*\n${portalUrl}`;
-    navigator.clipboard.writeText(fullText);
+    await copyToClipboard(fullText);
     setCopiedBoth(true);
     setTimeout(() => setCopiedBoth(false), 2500);
   };
 
-  const handleShareAdminWhatsApp = () => {
-    const cleanPhone = complex.ownerPhone ? complex.ownerPhone.replace(/[^0-9]/g, "") : "";
-    const msg = `¡Hola ${complex.ownerName || "Administrador"}! 👋 Te compartimos el enlace directo a tu *Panel de Administrador* de *${complex.name}* 🏟️:\n\n👉 ${adminUrl}\n\nDesde aquí podés administrar todas tus reservas, canchas, caja y clientes.`;
-    const target = cleanPhone
-      ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`
-      : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-    window.open(target, "_blank");
-  };
+  const cleanPhone = complex.ownerPhone ? complex.ownerPhone.replace(/[^0-9]/g, "") : "";
+  const adminMsg = `¡Hola ${complex.ownerName || "Administrador"}! 👋 Te compartimos el enlace directo a tu *Panel de Administrador* de *${complex.name}* 🏟️:\n\n👉 ${adminUrl}\n\nDesde aquí podés administrar todas tus reservas, canchas, caja y clientes.`;
+  const adminWhatsAppUrl = cleanPhone
+    ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(adminMsg)}`
+    : `https://api.whatsapp.com/send?text=${encodeURIComponent(adminMsg)}`;
 
-  const handleSharePortalWhatsApp = () => {
-    const msg = `¡Hola! 👋 Reservá tu cancha online en *${complex.name}* 🏟️ de forma rápida ingresando a nuestro portal de reservas 24/7:\n\n👉 ${portalUrl}\n\n¡Elegí fecha, cancha y horario en segundos! ⚽🎾`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, "_blank");
-  };
+  const portalMsg = `¡Hola! 👋 Reservá tu cancha online en *${complex.name}* 🏟️ de forma rápida ingresando a nuestro portal de reservas 24/7:\n\n👉 ${portalUrl}\n\n¡Elegí fecha, cancha y horario en segundos! ⚽🎾`;
+  const portalWhatsAppUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(portalMsg)}`;
 
-  const handleShareBothWhatsApp = () => {
-    const cleanPhone = complex.ownerPhone ? complex.ownerPhone.replace(/[^0-9]/g, "") : "";
-    const msg = `¡Hola ${complex.ownerName || "Administrador"}! 👋 Aquí tienes los enlaces de acceso oficiales para *${complex.name}*:\n\n🔑 *Tu Panel de Administrador (Privado):*\n👉 ${adminUrl}\n\n🌐 *Tu Portal de Clientes (Público de Reservas):*\n👉 ${portalUrl}\n\n¡Cualquier consulta estamos a tu disposición!`;
-    const target = cleanPhone
-      ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`
-      : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-    window.open(target, "_blank");
+  const bothMsg = `¡Hola ${complex.ownerName || "Administrador"}! 👋 Aquí tienes los enlaces de acceso oficiales para *${complex.name}*:\n\n🔑 *Tu Panel de Administrador (Privado):*\n👉 ${adminUrl}\n\n🌐 *Tu Portal de Clientes (Público de Reservas):*\n👉 ${portalUrl}\n\n¡Cualquier consulta estamos a tu disposición!`;
+  const bothWhatsAppUrl = cleanPhone
+    ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(bothMsg)}`
+    : `https://api.whatsapp.com/send?text=${encodeURIComponent(bothMsg)}`;
+
+  const handleEnterComplexPanel = () => {
+    switchComplex(complex.id);
+    onClose();
   };
 
   return createPortal(
@@ -112,7 +113,7 @@ export const SuperAdminShareLinksModal: React.FC<
                 <span className="px-2 py-0.5 rounded-full bg-indigo-500/30 text-amber-300 text-[10px] font-black uppercase tracking-wider border border-white/20">
                   SuperAdmin
                 </span>
-                <span className="text-xs text-indigo-100 font-bold">Enlaces del Complejo</span>
+                <span className="text-xs text-indigo-100 font-bold">Enlaces Oficiales</span>
               </div>
               <h3 className="font-extrabold text-lg sm:text-xl leading-tight text-white mt-0.5">
                 {complex.name}
@@ -158,13 +159,13 @@ export const SuperAdminShareLinksModal: React.FC<
                 </div>
                 <div>
                   <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <span>1. Link del Portal Administrador</span>
+                    <span>1. Enlace del Panel Administrador</span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-600 text-white font-black uppercase">
                       Privado
                     </span>
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Enlace directo para que el dueño/encargado acceda a administrar este complejo.
+                    Enlace directo para que el dueño/encargado gestione este complejo.
                   </p>
                 </div>
               </div>
@@ -199,22 +200,33 @@ export const SuperAdminShareLinksModal: React.FC<
 
             {/* Admin Action Buttons */}
             <div className="flex items-center gap-2 flex-wrap pt-1">
-              <button
-                type="button"
-                onClick={() => window.open(adminUrl, "_blank")}
-                className="px-3.5 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+              <a
+                href={adminUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer inline-flex"
               >
                 <ExternalLink className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Abrir Panel Administrador</span>
-              </button>
+                <span>Abrir en Nueva Pestaña</span>
+              </a>
+
+              <a
+                href={adminWhatsAppUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer inline-flex"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Enviar Link al Dueño (WhatsApp)</span>
+              </a>
 
               <button
                 type="button"
-                onClick={handleShareAdminWhatsApp}
-                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                onClick={handleEnterComplexPanel}
+                className="px-3.5 py-2 rounded-xl bg-indigo-100 dark:bg-indigo-950/80 hover:bg-indigo-200 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ml-auto"
               >
-                <Send className="w-3.5 h-3.5" />
-                <span>Enviar Link Admin al Dueño (WhatsApp)</span>
+                <LogIn className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Ingresar a este Panel</span>
               </button>
             </div>
           </div>
@@ -228,7 +240,7 @@ export const SuperAdminShareLinksModal: React.FC<
                 </div>
                 <div>
                   <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <span>2. Link del Portal de Clientes</span>
+                    <span>2. Enlace del Portal de Clientes</span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black uppercase">
                       Público 24/7
                     </span>
@@ -269,23 +281,25 @@ export const SuperAdminShareLinksModal: React.FC<
 
             {/* Portal Action Buttons */}
             <div className="flex items-center gap-2 flex-wrap pt-1">
-              <button
-                type="button"
-                onClick={() => window.open(portalUrl, "_blank")}
-                className="px-3.5 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+              <a
+                href={portalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer inline-flex"
               >
                 <ExternalLink className="w-3.5 h-3.5 text-emerald-500" />
                 <span>Abrir Portal de Clientes</span>
-              </button>
+              </a>
 
-              <button
-                type="button"
-                onClick={handleSharePortalWhatsApp}
-                className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+              <a
+                href={portalWhatsAppUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer inline-flex"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Compartir Portal a Clientes (WhatsApp)</span>
-              </button>
+              </a>
             </div>
           </div>
 
@@ -325,14 +339,15 @@ export const SuperAdminShareLinksModal: React.FC<
                 )}
               </button>
 
-              <button
-                type="button"
-                onClick={handleShareBothWhatsApp}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+              <a
+                href={bothWhatsAppUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-md inline-flex"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Enviar Pack Completo por WhatsApp</span>
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -352,3 +367,4 @@ export const SuperAdminShareLinksModal: React.FC<
     document.body
   );
 };
+

@@ -125,11 +125,21 @@ export function loadStoredData<T>(key: string, defaultValue: T): T {
 export function saveStoredData<T>(key: string, value: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-    if (typeof window !== "undefined" && syncChannel) {
-      try {
-        syncChannel.postMessage({ key, value, timestamp: Date.now() });
-      } catch (err) {
-        console.warn("BroadcastChannel postMessage failed:", err);
+    if (typeof window !== "undefined") {
+      // 1. Dispatch custom DOM event for current window/tab listeners
+      window.dispatchEvent(
+        new CustomEvent("rm_app_sync_event", {
+          detail: { key, value, timestamp: Date.now() },
+        }),
+      );
+
+      // 2. Broadcast across tabs and windows
+      if (syncChannel) {
+        try {
+          syncChannel.postMessage({ key, value, timestamp: Date.now() });
+        } catch (err) {
+          console.warn("BroadcastChannel postMessage failed:", err);
+        }
       }
     }
   } catch (e) {

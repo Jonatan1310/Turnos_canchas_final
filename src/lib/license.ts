@@ -41,9 +41,16 @@ export function addDaysToDate(baseDate: Date | string, days: number): string {
  * Calculates remaining whole days until expiration.
  * Returns negative number if expired.
  */
-export function getRemainingDays(expiresAt: string): number {
-  if (!expiresAt) return 0;
-  const expiry = new Date(expiresAt).getTime();
+export function getRemainingDays(
+  expiresAtOrLicense?: string | LicenseInfo | null,
+): number {
+  if (!expiresAtOrLicense) return 0;
+  const expiryStr =
+    typeof expiresAtOrLicense === "object"
+      ? expiresAtOrLicense.expiresAt
+      : expiresAtOrLicense;
+  if (!expiryStr) return 0;
+  const expiry = new Date(expiryStr).getTime();
   const now = new Date().getTime();
   if (isNaN(expiry)) return 0;
 

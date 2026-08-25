@@ -21,9 +21,55 @@ function getCleanBasePath(): string {
   const rootPath =
     window.location.pathname
       .replace(/\/superadmin\/?$/i, "")
-      .replace(/\/portal\/?$/i, "") || "";
+      .replace(/\/portal\/?$/i, "") || "/";
   const cleanRoot = rootPath.replace(/\/+$/, "");
   return `${window.location.origin}${cleanRoot}`;
+}
+
+/**
+ * Robust clipboard copy function supporting modern Clipboard API and fallback textarea
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  if (!text) return false;
+
+  // 1. Try modern navigator.clipboard
+  if (
+    typeof navigator !== "undefined" &&
+    navigator.clipboard &&
+    typeof navigator.clipboard.writeText === "function"
+  ) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn("navigator.clipboard.writeText failed, using fallback:", err);
+    }
+  }
+
+  // 2. Fallback to document.execCommand('copy') with temporary textarea
+  if (typeof document !== "undefined") {
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.top = "-9999px";
+      textarea.style.left = "-9999px";
+      textarea.style.opacity = "0";
+      textarea.style.pointerEvents = "none";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+      const successful = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      if (successful) return true;
+    } catch (err) {
+      console.error("execCommand fallback failed:", err);
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -47,11 +93,11 @@ export function buildComplexPortalUrl(params: {
   
   // Custom slug override or slug derived from complex name
   let targetSlug = custom;
-  if (!targetSlug && params.complexName) {
-    targetSlug = slugify(params.complexName);
-  }
   if (!targetSlug && params.slug) {
     targetSlug = params.slug;
+  }
+  if (!targetSlug && params.complexName) {
+    targetSlug = slugify(params.complexName);
   }
   if (!targetSlug && params.id) {
     targetSlug = params.id;
@@ -60,7 +106,8 @@ export function buildComplexPortalUrl(params: {
     targetSlug = "portal";
   }
 
-  return `${baseUrl}?view=portal&c=${encodeURIComponent(targetSlug)}`;
+  const separator = baseUrl.endsWith("/") ? "" : "/";
+  return `${baseUrl}${separator}?view=portal&c=${encodeURIComponent(targetSlug)}`;
 }
 
 /**
@@ -94,7 +141,8 @@ export function buildComplexAdminUrl(params: {
     targetSlug = "complejo";
   }
 
-  return `${baseUrl}?view=admin&c=${encodeURIComponent(targetSlug)}`;
+  const separator = baseUrl.endsWith("/") ? "" : "/";
+  return `${baseUrl}${separator}?view=admin&c=${encodeURIComponent(targetSlug)}`;
 }
 
 /**
@@ -103,6 +151,8 @@ export function buildComplexAdminUrl(params: {
 export function buildSuperAdminUrl(): string {
   if (typeof window === "undefined") return "";
   const baseUrl = getCleanBasePath();
-  return `${baseUrl}/superadmin`;
+  const separator = baseUrl.endsWith("/") ? "" : "/";
+  return `${baseUrl}${separator}superadmin`;
 }
+
 

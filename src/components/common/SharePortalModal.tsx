@@ -14,7 +14,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { buildComplexPortalUrl, slugify } from "../../lib/slugify";
+import { buildComplexPortalUrl, slugify, copyToClipboard } from "../../lib/slugify";
 
 interface SharePortalModalProps {
   isOpen: boolean;
@@ -78,8 +78,8 @@ export const SharePortalModal: React.FC<SharePortalModalProps> = ({
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(currentActiveUrl);
+  const handleCopy = async () => {
+    await copyToClipboard(currentActiveUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };

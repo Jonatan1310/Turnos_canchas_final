@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { SuperAdminPanel } from "./SuperAdminPanel";
-import { buildSuperAdminUrl } from "../../lib/slugify";
+import { buildSuperAdminUrl, copyToClipboard } from "../../lib/slugify";
 
 interface SuperAdminStandaloneViewProps {
   onExit: () => void;
@@ -45,8 +45,8 @@ export const SuperAdminStandaloneView: React.FC<
 
   const superAdminUrl = buildSuperAdminUrl();
 
-  const handleCopyUrl = () => {
-    navigator.clipboard.writeText(superAdminUrl);
+  const handleCopyUrl = async () => {
+    await copyToClipboard(superAdminUrl);
     setCopiedUrl(true);
     setTimeout(() => setCopiedUrl(false), 2000);
   };

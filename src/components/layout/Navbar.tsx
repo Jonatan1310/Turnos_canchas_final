@@ -13,6 +13,7 @@ import { useApp } from "../../context/AppContext";
 import { NotificationDropdown } from "../common/NotificationDropdown";
 import { SharePortalModal } from "../common/SharePortalModal";
 import { ActiveTab } from "./Sidebar";
+import { copyToClipboard } from "../../lib/slugify";
 
 interface NavbarProps {
   onToggleSidebar: () => void;
@@ -40,9 +41,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  const handleCopyLink = (e: React.MouseEvent) => {
+  const handleCopyLink = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(getPublicPortalUrl());
+    await copyToClipboard(getPublicPortalUrl());
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   };

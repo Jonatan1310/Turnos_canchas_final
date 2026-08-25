@@ -45,7 +45,11 @@ import { TenantComplex } from "../../types";
 import { NewClientPanelModal } from "./NewClientPanelModal";
 import { EditClientPanelModal } from "./EditClientPanelModal";
 import { SuperAdminShareLinksModal } from "./SuperAdminShareLinksModal";
-import { buildComplexAdminUrl, buildComplexPortalUrl } from "../../lib/slugify";
+import {
+  buildComplexAdminUrl,
+  buildComplexPortalUrl,
+  copyToClipboard,
+} from "../../lib/slugify";
 
 interface SuperAdminPanelProps {
   onClose?: () => void;
@@ -97,7 +101,7 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onClose }) => 
     }
   };
 
-  const handleCopyLink = (complex: TenantComplex, type: "admin" | "portal", e: React.MouseEvent) => {
+  const handleCopyLink = async (complex: TenantComplex, type: "admin" | "portal", e: React.MouseEvent) => {
     e.stopPropagation();
     const url =
       type === "admin"
@@ -114,7 +118,7 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onClose }) => 
             id: complex.id,
           });
 
-    navigator.clipboard.writeText(url);
+    await copyToClipboard(url);
     setCopiedLinkInfo({ id: complex.id, type });
     showFeedback(
       type === "admin"
@@ -584,182 +588,173 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onClose }) => 
                 </div>
 
                 {/* Direct Links Preview & Share Box (Admin & Customer Portal) */}
-                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/70 space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                      Enlaces Oficiales
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSharingComplex(complex);
-                      }}
-                      className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-[11px] flex items-center gap-1 cursor-pointer"
-                    >
-                      <Share2 className="w-3 h-3" />
-                      <span>Compartir Ambos</span>
-                    </button>
-                  </div>
+                {(() => {
+                  const adminUrl = buildComplexAdminUrl({
+                    complexName: complex.name,
+                    slug: complex.slug,
+                    customPortalUrl: complex.settings?.customPortalUrl,
+                    id: complex.id,
+                  });
+                  const portalUrl = buildComplexPortalUrl({
+                    complexName: complex.name,
+                    slug: complex.slug,
+                    customPortalUrl: complex.settings?.customPortalUrl,
+                    id: complex.id,
+                  });
+                  const cleanPhone = complex.ownerPhone ? complex.ownerPhone.replace(/[^0-9]/g, "") : "";
+                  const adminMsg = `¡Hola ${complex.ownerName || "Administrador"}! 👋 Te compartimos el link directo a tu *Panel de Administrador* de *${complex.name}* 🏟️:\n\n👉 ${adminUrl}\n\nDesde aquí podés administrar tus canchas, reservas y caja.`;
+                  const adminWhatsAppUrl = cleanPhone
+                    ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(adminMsg)}`
+                    : `https://api.whatsapp.com/send?text=${encodeURIComponent(adminMsg)}`;
 
-                  {/* 1. Admin Portal Link Row */}
-                  <div className="flex items-center justify-between gap-1.5 p-2 bg-white dark:bg-slate-800 rounded-xl border border-indigo-200/80 dark:border-indigo-900/80 shadow-xs">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 shrink-0 font-bold">
-                        <ShieldCheck className="w-4 h-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-extrabold text-[11px] text-slate-800 dark:text-slate-100">
-                            Portal Administrador
+                  const portalMsg = `¡Hola! 👋 Reservá tu cancha online en *${complex.name}* 🏟️ de forma rápida ingresando a nuestro portal de reservas:\n\n👉 ${portalUrl}\n\n¡Elegí fecha, cancha y horario en segundos! ⚽🎾`;
+                  const portalWhatsAppUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(portalMsg)}`;
+
+                  return (
+                    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/70 space-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          Enlaces Oficiales
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSharingComplex(complex);
+                          }}
+                          className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                        >
+                          <Share2 className="w-3 h-3" />
+                          <span>Compartir Ambos</span>
+                        </button>
+                      </div>
+
+                      {/* 1. Admin Portal Link Row */}
+                      <div className="flex items-center justify-between gap-1.5 p-2 bg-white dark:bg-slate-800 rounded-xl border border-indigo-200/80 dark:border-indigo-900/80 shadow-xs">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 shrink-0 font-bold">
+                            <ShieldCheck className="w-4 h-4" />
                           </span>
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold uppercase">
-                            Privado
-                          </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-extrabold text-[11px] text-slate-800 dark:text-slate-100">
+                                Portal Administrador
+                              </span>
+                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold uppercase">
+                                Privado
+                              </span>
+                            </div>
+                            <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                              ?view=admin&c={complex.slug || complex.id}
+                            </div>
+                          </div>
                         </div>
-                        <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                          ?view=admin&c={complex.slug || complex.id}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyLink(complex, "admin", e)}
+                            className="px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold text-[11px] transition-colors cursor-pointer flex items-center gap-1 border border-indigo-200/60 dark:border-indigo-800/60"
+                            title="Copiar Enlace de Administrador"
+                          >
+                            {copiedLinkInfo?.id === complex.id && copiedLinkInfo?.type === "admin" ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                <span>¡Copiado!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5" />
+                                <span>Copiar</span>
+                              </>
+                            )}
+                          </button>
+                          <a
+                            href={adminWhatsAppUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 transition-colors cursor-pointer border border-emerald-200/60 dark:border-emerald-800/60 inline-flex items-center justify-center"
+                            title="Compartir link de Administrador al dueño por WhatsApp"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </a>
+                          <a
+                            href={adminUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer inline-flex items-center justify-center"
+                            title="Abrir Panel Administrador en nueva pestaña"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* 2. Client Portal Link Row */}
+                      <div className="flex items-center justify-between gap-1.5 p-2 bg-white dark:bg-slate-800 rounded-xl border border-emerald-200/80 dark:border-emerald-900/80 shadow-xs">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 shrink-0 font-bold">
+                            <Globe className="w-4 h-4" />
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-extrabold text-[11px] text-slate-800 dark:text-slate-100">
+                                Portal de Clientes
+                              </span>
+                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold uppercase">
+                                Público 24/7
+                              </span>
+                            </div>
+                            <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                              ?view=portal&c={complex.settings?.customPortalUrl || complex.slug || complex.id}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyLink(complex, "portal", e)}
+                            className="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] transition-colors cursor-pointer flex items-center gap-1 border border-emerald-200/60 dark:border-emerald-800/60"
+                            title="Copiar Enlace del Portal de Clientes"
+                          >
+                            {copiedLinkInfo?.id === complex.id && copiedLinkInfo?.type === "portal" ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                <span>¡Copiado!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5" />
+                                <span>Copiar</span>
+                              </>
+                            )}
+                          </button>
+                          <a
+                            href={portalWhatsAppUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 text-teal-700 dark:text-teal-300 transition-colors cursor-pointer border border-teal-200/60 dark:border-teal-800/60 inline-flex items-center justify-center"
+                            title="Compartir link del portal de clientes por WhatsApp"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </a>
+                          <a
+                            href={portalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer inline-flex items-center justify-center"
+                            title="Abrir Portal de Clientes en nueva pestaña"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={(e) => handleCopyLink(complex, "admin", e)}
-                        className="px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold text-[11px] transition-colors cursor-pointer flex items-center gap-1 border border-indigo-200/60 dark:border-indigo-800/60"
-                        title="Copiar Link de Administrador"
-                      >
-                        {copiedLinkInfo?.id === complex.id && copiedLinkInfo?.type === "admin" ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-emerald-500" />
-                            <span>¡Copiado!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5" />
-                            <span>Copiar</span>
-                          </>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const cleanPhone = complex.ownerPhone ? complex.ownerPhone.replace(/[^0-9]/g, "") : "";
-                          const url = buildComplexAdminUrl({
-                            complexName: complex.name,
-                            slug: complex.slug,
-                            customPortalUrl: complex.settings?.customPortalUrl,
-                            id: complex.id,
-                          });
-                          const msg = `¡Hola ${complex.ownerName || "Administrador"}! 👋 Te compartimos el link directo a tu *Panel de Administrador* de *${complex.name}* 🏟️:\n\n👉 ${url}\n\nDesde aquí podés administrar tus canchas, reservas y caja.`;
-                          const target = cleanPhone
-                            ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`
-                            : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-                          window.open(target, "_blank");
-                        }}
-                        className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 transition-colors cursor-pointer border border-emerald-200/60 dark:border-emerald-800/60"
-                        title="Compartir link de Administrador al dueño por WhatsApp"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const url = buildComplexAdminUrl({
-                            complexName: complex.name,
-                            slug: complex.slug,
-                            customPortalUrl: complex.settings?.customPortalUrl,
-                            id: complex.id,
-                          });
-                          window.open(url, "_blank");
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
-                        title="Abrir Panel Administrador en nueva pestaña"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 2. Client Portal Link Row */}
-                  <div className="flex items-center justify-between gap-1.5 p-2 bg-white dark:bg-slate-800 rounded-xl border border-emerald-200/80 dark:border-emerald-900/80 shadow-xs">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 shrink-0 font-bold">
-                        <Globe className="w-4 h-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-extrabold text-[11px] text-slate-800 dark:text-slate-100">
-                            Portal de Clientes
-                          </span>
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold uppercase">
-                            Público 24/7
-                          </span>
-                        </div>
-                        <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                          ?view=portal&c={complex.settings?.customPortalUrl || complex.slug || complex.id}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={(e) => handleCopyLink(complex, "portal", e)}
-                        className="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] transition-colors cursor-pointer flex items-center gap-1 border border-emerald-200/60 dark:border-emerald-800/60"
-                        title="Copiar Link del Portal de Clientes"
-                      >
-                        {copiedLinkInfo?.id === complex.id && copiedLinkInfo?.type === "portal" ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-emerald-500" />
-                            <span>¡Copiado!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5" />
-                            <span>Copiar</span>
-                          </>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const url = buildComplexPortalUrl({
-                            complexName: complex.name,
-                            slug: complex.slug,
-                            customPortalUrl: complex.settings?.customPortalUrl,
-                            id: complex.id,
-                          });
-                          const msg = `¡Hola! 👋 Reservá tu cancha online en *${complex.name}* 🏟️ de forma rápida ingresando aquí:\n\n👉 ${url}\n\n¡Elegí fecha, cancha y horario en segundos! ⚽🎾`;
-                          window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, "_blank");
-                        }}
-                        className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 text-teal-700 dark:text-teal-300 transition-colors cursor-pointer border border-teal-200/60 dark:border-teal-800/60"
-                        title="Compartir link del portal de clientes por WhatsApp"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const url = buildComplexPortalUrl({
-                            complexName: complex.name,
-                            slug: complex.slug,
-                            customPortalUrl: complex.settings?.customPortalUrl,
-                            id: complex.id,
-                          });
-                          window.open(url, "_blank");
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
-                        title="Abrir Portal de Clientes en nueva pestaña"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
 
               {/* Card Footer Actions */}

@@ -223,9 +223,12 @@ export const EditClientPanelModal: React.FC<EditClientPanelModalProps> = ({
     }, 1000);
   };
 
+  const currentComplex =
+    complexes.find((c) => c.id === complex.id) || complex;
+
   const handleAddDays = (days: number) => {
     activateComplexLicense(
-      complex.id,
+      currentComplex.id,
       days,
       `Extensión de +${days} días realizada desde el panel de edición SuperAdmin`,
     );
@@ -234,10 +237,12 @@ export const EditClientPanelModal: React.FC<EditClientPanelModalProps> = ({
   };
 
   const handleToggleActive = () => {
-    const nextState = !complex.license?.isEnabled;
-    toggleComplexLicense(complex.id, nextState);
+    const nextState = !currentComplex.license?.isEnabled;
+    toggleComplexLicense(currentComplex.id, nextState);
     setFeedback(
-      nextState ? "Panel habilitado con éxito" : "Panel pausado/bloqueado temporalmente",
+      nextState
+        ? "Panel habilitado con éxito"
+        : "Panel pausado/bloqueado temporalmente",
     );
     setTimeout(() => setFeedback(""), 3000);
   };
@@ -249,10 +254,10 @@ export const EditClientPanelModal: React.FC<EditClientPanelModalProps> = ({
     }
     if (
       window.confirm(
-        `¿Estás seguro de que deseas eliminar permanentemente el panel de "${complex.name}"? Todos sus datos de reservas y canchas se borrarán.`,
+        `¿Estás seguro de que deseas eliminar permanentemente el panel de "${currentComplex.name}"? Todos sus datos de reservas y canchas se borrarán.`,
       )
     ) {
-      deleteComplex(complex.id);
+      deleteComplex(currentComplex.id);
       onClose();
     }
   };
@@ -772,7 +777,9 @@ export const EditClientPanelModal: React.FC<EditClientPanelModalProps> = ({
                         Fecha y Hora de Expiración Actual:
                       </div>
                       <div className="text-xs font-mono font-bold text-indigo-700 dark:text-indigo-300">
-                        {formatLicenseDateTime(complex.license?.expiresAt || "")}
+                        {formatLicenseDateTime(
+                          currentComplex.license?.expiresAt || "",
+                        )}
                       </div>
                     </div>
                   </div>
@@ -781,12 +788,12 @@ export const EditClientPanelModal: React.FC<EditClientPanelModalProps> = ({
                     type="button"
                     onClick={handleToggleActive}
                     className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                      complex.license?.isEnabled
+                      currentComplex.license?.isEnabled
                         ? "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 hover:bg-rose-200"
                         : "bg-emerald-600 text-white hover:bg-emerald-500"
                     }`}
                   >
-                    {complex.license?.isEnabled ? (
+                    {currentComplex.license?.isEnabled ? (
                       <>
                         <Lock className="w-3.5 h-3.5" />
                         <span>Pausar / Bloquear Panel</span>

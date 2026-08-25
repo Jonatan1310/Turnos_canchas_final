@@ -13,6 +13,7 @@ import {
   SUPER_ADMIN_CONTACT,
 } from "../../lib/license";
 import { cleanPhoneForWhatsApp } from "../../lib/whatsapp";
+import { copyToClipboard } from "../../lib/slugify";
 
 interface LicenseLockScreenProps {
   onOpenPortal?: () => void;
@@ -42,8 +43,8 @@ export const LicenseLockScreen: React.FC<LicenseLockScreenProps> = ({
     whatsappMessage,
   )}`;
 
-  const handleCopyAlias = () => {
-    navigator.clipboard.writeText(SUPER_ADMIN_CONTACT.paymentAlias);
+  const handleCopyAlias = async () => {
+    await copyToClipboard(SUPER_ADMIN_CONTACT.paymentAlias);
     setCopiedAlias(true);
     setTimeout(() => setCopiedAlias(false), 2500);
   };

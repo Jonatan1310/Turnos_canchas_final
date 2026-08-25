@@ -374,6 +374,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     window.addEventListener("storage", handleSyncEvent);
+    window.addEventListener("rm_app_sync_event", handleSyncEvent);
+    window.addEventListener("focus", handleSyncEvent);
+    document.addEventListener("visibilitychange", handleSyncEvent);
 
     let channel: BroadcastChannel | null = null;
     if (typeof window !== "undefined" && "BroadcastChannel" in window) {
@@ -383,8 +386,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       };
     }
 
+    // Fast interval ticker to guarantee sub-second sync even if events are throttled
+    const intervalId = setInterval(syncAllState, 1000);
+
     return () => {
       window.removeEventListener("storage", handleSyncEvent);
+      window.removeEventListener("rm_app_sync_event", handleSyncEvent);
+      window.removeEventListener("focus", handleSyncEvent);
+      document.removeEventListener("visibilitychange", handleSyncEvent);
+      clearInterval(intervalId);
       if (channel) {
         channel.close();
       }
@@ -1535,8 +1545,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Super Admin & License Functions
-  const isLicenseActiveValue = checkIsLicenseActive(license);
-  const remainingLicenseDays = getRemainingDays(license?.expiresAt);
+  const currentEffectiveLicense: LicenseInfo =
+    activeComplex?.license || license || createDefaultLicense();
+  const isLicenseActiveValue = checkIsLicenseActive(currentEffectiveLicense);
+  const remainingLicenseDays = getRemainingDays(currentEffectiveLicense?.expiresAt);
 
   const loginSuperAdmin = (
     username: string,
