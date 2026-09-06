@@ -1,5 +1,6 @@
 import { ComplexSettings } from "../types";
 import { formatCurrency } from "./currency";
+import { buildComplexPortalUrl } from "./slugify";
 
 export interface WhatsAppMessageData {
   customerName: string;
@@ -19,20 +20,10 @@ export interface WhatsAppMessageData {
 
 export function resolvePortalUrl(data: { settings?: ComplexSettings; portalUrl?: string }): string {
   if (data.portalUrl && data.portalUrl.trim()) return data.portalUrl.trim();
-  if (data.settings?.customPortalUrl && data.settings.customPortalUrl.trim()) {
-    const rawUrl = data.settings.customPortalUrl.trim();
-    if (/^https?:\/\//i.test(rawUrl)) return rawUrl;
-    if (rawUrl.startsWith("/") || rawUrl.startsWith("?")) {
-      if (typeof window !== "undefined") {
-        return `${window.location.origin}${window.location.pathname.replace(/\/$/, "")}${rawUrl.startsWith("/") ? rawUrl : "/" + rawUrl}`;
-      }
-    }
-    return `https://${rawUrl}`;
-  }
-  if (typeof window !== "undefined") {
-    return `${window.location.origin}${window.location.pathname}?view=portal`;
-  }
-  return "";
+  return buildComplexPortalUrl({
+    complexName: data.settings?.complexName,
+    customPortalUrl: data.settings?.customPortalUrl,
+  });
 }
 
 export function cleanPhoneForWhatsApp(phone: string): string {

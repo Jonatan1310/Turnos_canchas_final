@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Settings,
   Save,
@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { formatCurrency } from "../../lib/currency";
-import { slugify, buildComplexPortalUrl, buildComplexAdminUrl } from "../../lib/slugify";
+import { slugify, buildComplexPortalUrl, buildComplexAdminUrl, copyToClipboard } from "../../lib/slugify";
 import { SharePortalModal } from "../common/SharePortalModal";
 import {
   THEME_PRESETS,
@@ -42,7 +42,13 @@ import {
   getThemePreset,
 } from "../../lib/themePresets";
 
-export const SettingsView: React.FC = () => {
+interface SettingsViewProps {
+  onOpenPublicPortal?: () => void;
+}
+
+export const SettingsView: React.FC<SettingsViewProps> = ({
+  onOpenPublicPortal,
+}) => {
   const {
     settings,
     updateSettings,
@@ -51,13 +57,32 @@ export const SettingsView: React.FC = () => {
     importBackupJSON,
     setThemeMode: setContextThemeMode,
     setThemePreset: setContextThemePreset,
+    activeComplex,
+    activeComplexId,
   } = useApp();
+
+  const lastLoadedComplexIdRef = useRef<string | null>(null);
 
   const [complexName, setComplexName] = useState(settings.complexName);
   const [logoUrl, setLogoUrl] = useState(settings.logoUrl || "");
   const [address, setAddress] = useState(settings.address);
   const [phone, setPhone] = useState(settings.phone);
   const [whatsapp, setWhatsapp] = useState(settings.whatsapp);
+  const [ownerName, setOwnerName] = useState(activeComplex?.ownerName || "");
+  const [email, setEmail] = useState(
+    settings.email || activeComplex?.ownerEmail || "",
+  );
+  const [defaultOpeningTime, setDefaultOpeningTime] = useState(
+    settings.defaultOpeningTime || "08:00",
+  );
+  const [defaultClosingTime, setDefaultClosingTime] = useState(
+    settings.defaultClosingTime || "23:00",
+  );
+  const [cancellationPolicyHours, setCancellationPolicyHours] = useState(
+    settings.cancellationPolicyHours !== undefined
+      ? settings.cancellationPolicyHours
+      : 4,
+  );
   const [themeMode, setThemeModeState] = useState<ThemeMode>(
     settings.themeMode || "light",
   );
@@ -192,87 +217,100 @@ export const SettingsView: React.FC = () => {
   );
 
   useEffect(() => {
-    setComplexName(settings.complexName);
-    setLogoUrl(settings.logoUrl || "");
-    setAddress(settings.address);
-    setPhone(settings.phone);
-    setWhatsapp(settings.whatsapp);
-    setCurrency(settings.currencySymbol || "$");
-    setPrimaryCurrency(settings.primaryCurrency || "ARS");
-    setExchangeRateUsdToArs(settings.exchangeRateUsdToArs || 1200);
-    setDisplayCurrencyAdmin(settings.displayCurrencyAdmin || "ARS");
-    setDisplayCurrencyClient(settings.displayCurrencyClient || "ARS");
-    setDepositPercentage(settings.depositPercentage);
-    setBankName(settings.bankDetails?.bankName || "Banco Galicia");
-    setAccountHolder(
-      settings.bankDetails?.accountHolder || "Complejo Deportivo S.R.L.",
-    );
-    setCbuCvu(settings.bankDetails?.cbuCvu || "0000003100087654321098");
-    setAlias(settings.bankDetails?.alias || "CANCHAS.RESERVAS.MP");
-    setCuitCuil(settings.bankDetails?.cuitCuil || "30-71829384-9");
-    setMpAccountHolder(
-      settings.mercadoPagoDetails?.accountHolder ||
-        settings.complexName ||
-        "Complejo Deportivo",
-    );
-    setMpAliasOrEmail(
-      settings.mercadoPagoDetails?.mpAliasOrEmail || "complejo.mp",
-    );
-    setCvuMp(settings.mercadoPagoDetails?.cvuMp || "0000003100099887766554");
-    setCuitCuilMp(settings.mercadoPagoDetails?.cuitCuilMp || "30-71829384-9");
-    setCheckoutLinkMp(settings.mercadoPagoDetails?.checkoutLinkMp || "");
-    setNotesMp(
-      settings.mercadoPagoDetails?.notesMp ||
-        "Transferir la seña al Alias/CVU de Mercado Pago o mediante Link.",
-    );
-    setCashPaymentNotes(
-      settings.cashPaymentNotes ||
-        "Abonar en recepción del complejo antes del inicio del turno.",
-    );
+    // Only reload form states if the active complex changed, or on first mount
+    if (activeComplexId !== lastLoadedComplexIdRef.current) {
+      lastLoadedComplexIdRef.current = activeComplexId;
+      setComplexName(settings.complexName);
+      setLogoUrl(settings.logoUrl || "");
+      setAddress(settings.address);
+      setPhone(settings.phone);
+      setWhatsapp(settings.whatsapp);
+      setOwnerName(activeComplex?.ownerName || "");
+      setEmail(settings.email || activeComplex?.ownerEmail || "");
+      setDefaultOpeningTime(settings.defaultOpeningTime || "08:00");
+      setDefaultClosingTime(settings.defaultClosingTime || "23:00");
+      setCancellationPolicyHours(
+        settings.cancellationPolicyHours !== undefined
+          ? settings.cancellationPolicyHours
+          : 4,
+      );
+      setCurrency(settings.currencySymbol || "$");
+      setPrimaryCurrency(settings.primaryCurrency || "ARS");
+      setExchangeRateUsdToArs(settings.exchangeRateUsdToArs || 1200);
+      setDisplayCurrencyAdmin(settings.displayCurrencyAdmin || "ARS");
+      setDisplayCurrencyClient(settings.displayCurrencyClient || "ARS");
+      setDepositPercentage(settings.depositPercentage);
+      setBankName(settings.bankDetails?.bankName || "Banco Galicia");
+      setAccountHolder(
+        settings.bankDetails?.accountHolder || "Complejo Deportivo S.R.L.",
+      );
+      setCbuCvu(settings.bankDetails?.cbuCvu || "0000003100087654321098");
+      setAlias(settings.bankDetails?.alias || "CANCHAS.RESERVAS.MP");
+      setCuitCuil(settings.bankDetails?.cuitCuil || "30-71829384-9");
+      setMpAccountHolder(
+        settings.mercadoPagoDetails?.accountHolder ||
+          settings.complexName ||
+          "Complejo Deportivo",
+      );
+      setMpAliasOrEmail(
+        settings.mercadoPagoDetails?.mpAliasOrEmail || "complejo.mp",
+      );
+      setCvuMp(settings.mercadoPagoDetails?.cvuMp || "0000003100099887766554");
+      setCuitCuilMp(settings.mercadoPagoDetails?.cuitCuilMp || "30-71829384-9");
+      setCheckoutLinkMp(settings.mercadoPagoDetails?.checkoutLinkMp || "");
+      setNotesMp(
+        settings.mercadoPagoDetails?.notesMp ||
+          "Transferir la seña al Alias/CVU de Mercado Pago o mediante Link.",
+      );
+      setCashPaymentNotes(
+        settings.cashPaymentNotes ||
+          "Abonar en recepción del complejo antes del inicio del turno.",
+      );
 
-    setCustomPortalUrl(settings.customPortalUrl || "");
-    setShowCarousel(settings.showCarousel !== false);
-    setCarouselImages(
-      settings.carouselImages || [
-        "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1511886929837-354d827aae26?auto=format&fit=crop&w=1200&q=80",
-      ],
-    );
-    setShowPublicServices(settings.showPublicServices !== false);
-    setShowWifiSection(settings.showWifiSection !== false);
-    setShowBarSection(settings.showBarSection !== false);
-    setShowRulesSection(settings.showRulesSection !== false);
-    setShowGoogleMapsBtn(settings.showGoogleMapsBtn !== false);
-    setWifiName(settings.wifiName || "Complejo_Invitados_5G");
-    setWifiPassword(settings.wifiPassword || "padelyfutbol2026");
-    setBarInfo(
-      settings.barInfo ||
-        "Abierto todos los días de 17:00 a 01:00 hs. Hamburguesas, minutas, pizzas, cerveza tirada y bebidas.",
-    );
-    setComplexRules(
-      settings.complexRules ||
-        "Calzado deportivo sin tapones metálicos. Tolerancia de 10 min por turno. Cancelaciones con 24hs de anticipación.",
-    );
-    setGoogleMapsUrl(
-      settings.googleMapsUrl || "https://maps.google.com/?q=-34.5453,-58.4497",
-    );
-    setThemeModeState(settings.themeMode || "light");
-    setThemePresetState(settings.themePreset || "emerald");
-    setPrimaryColor(settings.primaryColor || "#059669");
-    setSecondaryColor(settings.secondaryColor || "#10b981");
-    setAmenitiesInput(
-      (
-        settings.amenitiesList || [
-          "Wi-Fi Gratis",
-          "Bar & Canteen",
-          "Estacionamiento",
-          "Vestuarios con Duchas",
-          "Iluminación LED Pro",
-        ]
-      ).join(", "),
-    );
-  }, [settings]);
+      setCustomPortalUrl(settings.customPortalUrl || "");
+      setShowCarousel(settings.showCarousel !== false);
+      setCarouselImages(
+        settings.carouselImages || [
+          "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1511886929837-354d827aae26?auto=format&fit=crop&w=1200&q=80",
+        ],
+      );
+      setShowPublicServices(settings.showPublicServices !== false);
+      setShowWifiSection(settings.showWifiSection !== false);
+      setShowBarSection(settings.showBarSection !== false);
+      setShowRulesSection(settings.showRulesSection !== false);
+      setShowGoogleMapsBtn(settings.showGoogleMapsBtn !== false);
+      setWifiName(settings.wifiName || "Complejo_Invitados_5G");
+      setWifiPassword(settings.wifiPassword || "padelyfutbol2026");
+      setBarInfo(
+        settings.barInfo ||
+          "Abierto todos los días de 17:00 a 01:00 hs. Hamburguesas, minutas, pizzas, cerveza tirada y bebidas.",
+      );
+      setComplexRules(
+        settings.complexRules ||
+          "Calzado deportivo sin tapones metálicos. Tolerancia de 10 min por turno. Cancelaciones con 24hs de anticipación.",
+      );
+      setGoogleMapsUrl(
+        settings.googleMapsUrl || "https://maps.google.com/?q=-34.5453,-58.4497",
+      );
+      setThemeModeState(settings.themeMode || "light");
+      setThemePresetState(settings.themePreset || "emerald");
+      setPrimaryColor(settings.primaryColor || "#059669");
+      setSecondaryColor(settings.secondaryColor || "#10b981");
+      setAmenitiesInput(
+        (
+          settings.amenitiesList || [
+            "Wi-Fi Gratis",
+            "Bar & Canteen",
+            "Estacionamiento",
+            "Vestuarios con Duchas",
+            "Iluminación LED Pro",
+          ]
+        ).join(", "),
+      );
+    }
+  }, [activeComplexId, settings, activeComplex]);
 
   // Per-card save feedback state
   const [savedCard, setSavedCard] = useState<string | null>(null);
@@ -294,15 +332,19 @@ export const SettingsView: React.FC = () => {
   };
 
   const getPublicPortalUrl = () => {
+    const effectiveName = (complexName || settings.complexName || activeComplex?.name || "").trim();
+    const isCustomFullUrl = Boolean(customPortalUrl && /^https?:\/\//i.test(customPortalUrl.trim()));
     return buildComplexPortalUrl({
-      complexName: complexName || settings.complexName,
-      customPortalUrl: customPortalUrl,
-      id: settings.complexName ? slugify(settings.complexName) : undefined,
+      complexName: effectiveName,
+      slug: slugify(effectiveName) || activeComplex?.slug,
+      customPortalUrl: isCustomFullUrl ? customPortalUrl.trim() : undefined,
+      id: activeComplexId,
     });
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(getPublicPortalUrl());
+  const handleCopyLink = async () => {
+    handleSaveSection("general");
+    await copyToClipboard(getPublicPortalUrl());
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
   };
@@ -339,6 +381,10 @@ export const SettingsView: React.FC = () => {
       address,
       phone,
       whatsapp,
+      email,
+      defaultOpeningTime,
+      defaultClosingTime,
+      cancellationPolicyHours: Number(cancellationPolicyHours) || 4,
       themeMode,
       themePreset,
       primaryColor,
@@ -365,7 +411,10 @@ export const SettingsView: React.FC = () => {
         notesMp,
       },
       cashPaymentNotes,
-      customPortalUrl,
+      customPortalUrl:
+        customPortalUrl && /^https?:\/\//i.test(customPortalUrl.trim())
+          ? customPortalUrl.trim()
+          : slugify(complexName),
       showCarousel,
       carouselImages,
       showPublicServices,
@@ -388,6 +437,7 @@ export const SettingsView: React.FC = () => {
               "Vestuarios con Duchas",
               "Iluminación LED Pro",
             ],
+      ...(ownerName ? { ownerName } : {}),
     });
 
     setSavedCard(sectionId);
@@ -598,7 +648,13 @@ export const SettingsView: React.FC = () => {
             <input
               type="text"
               value={complexName}
-              onChange={(e) => setComplexName(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setComplexName(val);
+                if (!customPortalUrl || !/^https?:\/\//i.test(customPortalUrl)) {
+                  setCustomPortalUrl(slugify(val));
+                }
+              }}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
               placeholder="Ej: Padel Club Central"
               required
@@ -648,6 +704,78 @@ export const SettingsView: React.FC = () => {
               placeholder="Ej: 5491144556677"
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+              Responsable / Titular
+            </label>
+            <input
+              type="text"
+              value={ownerName}
+              onChange={(e) => setOwnerName(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+              placeholder="Ej: Juan Pérez"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+              Email Institucional
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+              placeholder="contacto@miclub.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+              Horario Habitual de Apertura
+            </label>
+            <input
+              type="time"
+              value={defaultOpeningTime}
+              onChange={(e) => setDefaultOpeningTime(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+              Horario Habitual de Cierre
+            </label>
+            <input
+              type="time"
+              value={defaultClosingTime}
+              onChange={(e) => setDefaultClosingTime(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+              Tolerancia para Cancelaciones (Horas)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                max="72"
+                value={cancellationPolicyHours}
+                onChange={(e) => setCancellationPolicyHours(Number(e.target.value))}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white pr-12"
+              />
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                horas
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+              Anticipación mínima para cancelaciones de reservas.
+            </p>
           </div>
 
           <div>
@@ -1156,11 +1284,11 @@ export const SettingsView: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer"
+                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer active:scale-95"
                 title="Copiar enlace al portapapeles"
               >
                 {copiedLink ? (
@@ -1173,23 +1301,44 @@ export const SettingsView: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setIsShareModalOpen(true)}
-                className="px-2.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-emerald-100 dark:hover:bg-slate-700 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold border border-emerald-300 dark:border-emerald-700 flex items-center gap-1 transition-all cursor-pointer"
-                title="Ver opciones de compartir y QR"
+                onClick={() => {
+                  handleSaveSection("general");
+                  setIsShareModalOpen(true);
+                }}
+                className="px-2.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold border border-emerald-300 dark:border-emerald-700 flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                title="Ver opciones de compartir y código QR"
               >
                 <Share2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>Compartir</span>
               </button>
 
+              {onOpenPublicPortal && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSaveSection("general");
+                    onOpenPublicPortal();
+                  }}
+                  className="px-2.5 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer active:scale-95"
+                  title="Ver portal en vivo directamente dentro del sistema"
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>Ver en Sistema</span>
+                </button>
+              )}
+
               <a
                 href={getPublicPortalUrl()}
+                onClick={() => {
+                  handleSaveSection("general");
+                }}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-2.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-700 flex items-center gap-1 transition-all"
+                className="px-2.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-700 flex items-center gap-1 transition-all active:scale-95"
                 title="Probar y abrir portal en nueva pestaña"
               >
                 <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-                <span>Probar</span>
+                <span>Abrir Pestaña</span>
               </a>
             </div>
           </div>
@@ -1827,6 +1976,7 @@ export const SettingsView: React.FC = () => {
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         customUrl={getPublicPortalUrl()}
+        onOpenDirectly={onOpenPublicPortal}
       />
     </div>
   );

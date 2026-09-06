@@ -34,6 +34,7 @@ export interface TenantComplex {
   id: string;
   name: string;
   slug: string;
+  logoUrl?: string;
   ownerName: string;
   ownerEmail: string;
   ownerPhone: string;

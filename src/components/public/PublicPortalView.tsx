@@ -26,6 +26,7 @@ import {
   Coffee,
   CalendarPlus,
   ArrowRight,
+  ArrowLeft,
   Check,
   AlertCircle,
   RefreshCw,
@@ -44,6 +45,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { Court, Booking } from "../../types";
+import { copyToClipboard, slugify } from "../../lib/slugify";
 import { SharePortalModal } from "../common/SharePortalModal";
 import { CustomerAuthModal, PortalUser } from "./CustomerAuthModal";
 import {
@@ -759,8 +761,8 @@ export const PublicPortalView: React.FC<PublicPortalViewProps> = ({
     }
   };
 
-  const handleCopyPublicLink = () => {
-    navigator.clipboard.writeText(getPublicPortalUrl());
+  const handleCopyPublicLink = async () => {
+    await copyToClipboard(getPublicPortalUrl());
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
   };
@@ -798,6 +800,17 @@ export const PublicPortalView: React.FC<PublicPortalViewProps> = ({
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white px-4 py-2.5 text-xs flex flex-wrap items-center justify-between gap-2 shadow-md">
         <div className="flex items-center space-x-2">
+          {onReturnToAdmin && (
+            <button
+              type="button"
+              onClick={onReturnToAdmin}
+              className="px-2.5 py-1 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 transition-all border border-white/20 shadow-xs cursor-pointer active:scale-95 mr-1"
+              title="Volver a la gestión y panel de administración"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Volver a Admin</span>
+            </button>
+          )}
           <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-500/30 text-blue-300 border border-blue-400/30 font-extrabold">
             <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-400" />
             Portal de Reservas para Clientes
@@ -810,6 +823,36 @@ export const PublicPortalView: React.FC<PublicPortalViewProps> = ({
         </div>
 
         <div className="flex items-center space-x-2">
+          {/* Share Portal Button */}
+          <button
+            type="button"
+            onClick={() => setIsShareModalOpen(true)}
+            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
+            title="Compartir enlace de reservas (WhatsApp, Redes, Copiar)"
+          >
+            <Share2 className="w-3.5 h-3.5 text-emerald-200" />
+            <span>Compartir</span>
+          </button>
+
+          {/* Copy Link Button */}
+          <button
+            type="button"
+            onClick={handleCopyPublicLink}
+            className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-1.5 border border-white/15 transition-all cursor-pointer active:scale-95"
+            title="Copiar link oficial de reservas"
+          >
+            {copiedLink ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>¡Copiado!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5 text-slate-300" />
+                <span>Copiar Link</span>
+              </>
+            )}
+          </button>
           {/* User Account Login Widget */}
           {portalUser ? (
             <div className="relative">
@@ -948,6 +991,16 @@ export const PublicPortalView: React.FC<PublicPortalViewProps> = ({
                   <span>Ubicación</span>
                   <ExternalLink className="w-3.5 h-3.5 opacity-80 group-hover:translate-x-0.5 transition-transform shrink-0" />
                 </a>
+
+                <button
+                  type="button"
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-extrabold text-xs transition-all cursor-pointer group hover:scale-[1.02] active:scale-95 border border-slate-200 dark:border-slate-700 shadow-2xs"
+                  title="Compartir link de reservas con amigos o clientes"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span>Compartir</span>
+                </button>
               </div>
             </div>
           </div>

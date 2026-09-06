@@ -188,6 +188,42 @@ export function applyThemeToDocument(settings?: ComplexSettings) {
     document.head.appendChild(metaTheme);
   }
   metaTheme.content = themeMode === "dark" ? "#0f172a" : primaryColor;
+
+  // 4. Synchronize Document Title with complex name
+  if (settings.complexName && settings.complexName.trim()) {
+    document.title = `${settings.complexName.trim()} | Sistema de Reservas`;
+  }
+
+  // 5. Synchronize Browser Favicon with configured complex logo
+  if (settings.logoUrl && settings.logoUrl.trim()) {
+    let faviconLink = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
+    if (!faviconLink) {
+      faviconLink = document.createElement("link");
+      faviconLink.rel = "shortcut icon";
+      document.head.appendChild(faviconLink);
+    }
+    faviconLink.href = settings.logoUrl.trim();
+  }
+
+  // 6. Synchronize OpenGraph metadata for sharing
+  if (settings.complexName) {
+    let ogTitle = document.querySelector<HTMLMetaElement>("meta[property='og:title']");
+    if (!ogTitle) {
+      ogTitle = document.createElement("meta");
+      ogTitle.setAttribute("property", "og:title");
+      document.head.appendChild(ogTitle);
+    }
+    ogTitle.content = `${settings.complexName} | Portal Oficial de Reservas`;
+  }
+  if (settings.logoUrl) {
+    let ogImage = document.querySelector<HTMLMetaElement>("meta[property='og:image']");
+    if (!ogImage) {
+      ogImage = document.createElement("meta");
+      ogImage.setAttribute("property", "og:image");
+      document.head.appendChild(ogImage);
+    }
+    ogImage.content = settings.logoUrl;
+  }
 }
 
 export function getThemePreset(presetId?: string): ThemePresetOption {

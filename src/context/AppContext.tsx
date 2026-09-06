@@ -319,47 +319,101 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Helper to persist changes to the active complex inside complexes master database
   const syncToActiveComplex = (partial: Partial<TenantComplex>) => {
-    setComplexes((prevComplexes) => {
-      const updated = prevComplexes.map((c) => {
-        if (c.id === activeComplexId) {
-          return { ...c, ...partial };
-        }
-        return c;
-      });
-      saveStoredData(STORAGE_KEYS.COMPLEXES, updated);
-      return updated;
+    const currentStored: TenantComplex[] = loadStoredData(
+      STORAGE_KEYS.COMPLEXES,
+      INITIAL_COMPLEXES,
+    );
+    const updated = currentStored.map((c) => {
+      if (c.id === activeComplexId) {
+        return { ...c, ...partial };
+      }
+      return c;
     });
+    saveStoredData(STORAGE_KEYS.COMPLEXES, updated);
+    setComplexes(updated);
   };
 
-  // Real-time synchronization across tabs, windows, and components without cross-tenant interference
+  // Real-time synchronization across tabs and windows without cross-tenant interference
   useEffect(() => {
     const syncAllState = () => {
       const latestComplexes: TenantComplex[] = loadStoredData(
         STORAGE_KEYS.COMPLEXES,
         INITIAL_COMPLEXES,
       );
-      setComplexes(latestComplexes);
 
       // Determine active complex for THIS specific tab/window
       const resolvedId = resolveActiveComplexId(latestComplexes);
-      const targetComplex =
-        latestComplexes.find((c) => c.id === resolvedId) ||
-        latestComplexes.find((c) => c.id === activeComplexId) ||
-        latestComplexes[0];
+      const urlHasExplicitComplex =
+        typeof window !== "undefined" &&
+        Boolean(
+          new URLSearchParams(window.location.search).get("c") ||
+            new URLSearchParams(window.location.search).get("complex") ||
+            new URLSearchParams(window.location.search).get("slug"),
+        );
+
+      const targetComplex = urlHasExplicitComplex
+        ? latestComplexes.find((c) => c.id === resolvedId) ||
+          latestComplexes.find((c) => c.id === activeComplexId) ||
+          latestComplexes[0]
+        : latestComplexes.find((c) => c.id === activeComplexId) ||
+          latestComplexes.find((c) => c.id === resolvedId) ||
+          latestComplexes[0];
 
       if (targetComplex) {
         if (targetComplex.id !== activeComplexId) {
           setActiveComplexId(targetComplex.id);
         }
-        setCourts(targetComplex.courts || []);
-        setCourtTypes(targetComplex.courtTypes || []);
-        setBookings(targetComplex.bookings || []);
-        setCustomers(targetComplex.customers || []);
-        setWaitlist(targetComplex.waitlist || []);
-        setSettings(targetComplex.settings || INITIAL_SETTINGS);
-        setNotifications(targetComplex.notifications || []);
-        setAuditLogs(targetComplex.auditLogs || []);
-        setLicense(targetComplex.license || createDefaultLicense());
+        // Set state only if disk data has actually changed to avoid tearing form inputs
+        setComplexes((prev) =>
+          JSON.stringify(prev) === JSON.stringify(latestComplexes)
+            ? prev
+            : latestComplexes,
+        );
+        setCourts((prev) =>
+          JSON.stringify(prev) === JSON.stringify(targetComplex.courts)
+            ? prev
+            : targetComplex.courts || [],
+        );
+        setCourtTypes((prev) =>
+          JSON.stringify(prev) === JSON.stringify(targetComplex.courtTypes)
+            ? prev
+            : targetComplex.courtTypes || [],
+        );
+        setBookings((prev) =>
+          JSON.stringify(prev) === JSON.stringify(targetComplex.bookings)
+            ? prev
+            : targetComplex.bookings || [],
+        );
+        setCustomers((prev) =>
+          JSON.stringify(prev) === JSON.stringify(targetComplex.customers)
+            ? prev
+            : targetComplex.customers || [],
+        );
+        setWaitlist((prev) =>
+          JSON.stringify(prev) === JSON.stringify(targetComplex.waitlist)
+            ? prev
+            : targetComplex.waitlist || [],
+        );
+        setSettings((prev) =>
+          JSON.stringify(prev) === JSON.stringify(targetComplex.settings)
+            ? prev
+            : targetComplex.settings || INITIAL_SETTINGS,
+        );
+        setNotifications((prev) =>
+          JSON.stringify(prev) === JSON.stringify(targetComplex.notifications)
+            ? prev
+            : targetComplex.notifications || [],
+        );
+        setAuditLogs((prev) =>
+          JSON.stringify(prev) === JSON.stringify(targetComplex.auditLogs)
+            ? prev
+            : targetComplex.auditLogs || [],
+        );
+        setLicense((prev) =>
+          JSON.stringify(prev) === JSON.stringify(targetComplex.license)
+            ? prev
+            : targetComplex.license || createDefaultLicense(),
+        );
       }
 
       setUsers(loadStoredData(STORAGE_KEYS.USERS, INITIAL_USERS));
@@ -374,7 +428,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     window.addEventListener("storage", handleSyncEvent);
-    window.addEventListener("rm_app_sync_event", handleSyncEvent);
     window.addEventListener("focus", handleSyncEvent);
     document.addEventListener("visibilitychange", handleSyncEvent);
 
@@ -386,15 +439,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       };
     }
 
-    // Fast interval ticker to guarantee sub-second sync even if events are throttled
-    const intervalId = setInterval(syncAllState, 1000);
-
     return () => {
       window.removeEventListener("storage", handleSyncEvent);
-      window.removeEventListener("rm_app_sync_event", handleSyncEvent);
       window.removeEventListener("focus", handleSyncEvent);
       document.removeEventListener("visibilitychange", handleSyncEvent);
-      clearInterval(intervalId);
       if (channel) {
         channel.close();
       }
@@ -1405,30 +1453,126 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Settings & Reset
   const updateSettings = (newSettings: Partial<ComplexSettings>) => {
-    const updated = { ...settings, ...newSettings };
-    setSettings(updated);
-    saveStoredData(STORAGE_KEYS.SETTINGS, updated);
+    const targetId = activeComplexId;
+    const currentComplex =
+      complexes.find((c) => c.id === targetId) ||
+      loadStoredData<TenantComplex[]>(STORAGE_KEYS.COMPLEXES, INITIAL_COMPLEXES).find(
+        (c) => c.id === targetId,
+      ) ||
+      complexes[0] ||
+      INITIAL_COMPLEXES[0];
 
-    if (newSettings.themeMode) {
-      setTheme(newSettings.themeMode === "dark" ? "dark" : "light");
+    const currentSettings = currentComplex.settings || settings || INITIAL_SETTINGS;
+    const mergedSettings: ComplexSettings = {
+      ...currentSettings,
+      ...newSettings,
+      bankDetails: {
+        ...(currentSettings.bankDetails || {}),
+        ...(newSettings.bankDetails || {}),
+      },
+      mercadoPagoDetails: {
+        ...(currentSettings.mercadoPagoDetails || {}),
+        ...(newSettings.mercadoPagoDetails || {}),
+      },
+    };
+
+    const newComplexName = (
+      mergedSettings.complexName !== undefined
+        ? mergedSettings.complexName
+        : currentComplex.name || ""
+    ).trim();
+
+    // Determine the next slug matching the configured administrator settings:
+    // The complex name takes absolute precedence!
+    let nextSlug = "";
+    if (newComplexName) {
+      nextSlug = slugify(newComplexName);
+    } else if (newSettings.customPortalUrl && !/^https?:\/\//i.test(newSettings.customPortalUrl.trim())) {
+      nextSlug = slugify(newSettings.customPortalUrl.trim());
+    } else if (currentComplex.slug) {
+      nextSlug = currentComplex.slug;
+    } else {
+      nextSlug = targetId;
     }
-    applyThemeToDocument(updated);
 
-    const newComplexName = updated.complexName || activeComplex.name;
-    const newSlug = slugify(newComplexName) || activeComplex.slug || activeComplexId;
-    syncToActiveComplex({
-      settings: updated,
-      name: newComplexName,
-      slug: newSlug,
-      address: updated.address || activeComplex.address,
-      ownerPhone: updated.phone || activeComplex.ownerPhone,
-      ownerEmail: updated.email || activeComplex.ownerEmail,
+    // Only keep customPortalUrl if it's a full external URL; otherwise synchronize with nextSlug
+    if (!mergedSettings.customPortalUrl || !/^https?:\/\//i.test(mergedSettings.customPortalUrl.trim())) {
+      mergedSettings.customPortalUrl = nextSlug;
+    }
+
+    // 1. Read current master complexes from storage and update synchronously
+    const storedComplexes: TenantComplex[] = loadStoredData(
+      STORAGE_KEYS.COMPLEXES,
+      INITIAL_COMPLEXES,
+    );
+
+    const updatedComplexes = storedComplexes.map((c) => {
+      if (c.id === targetId) {
+        return {
+          ...c,
+          name: newComplexName || c.name,
+          slug: nextSlug || c.slug,
+          logoUrl:
+            mergedSettings.logoUrl !== undefined
+              ? mergedSettings.logoUrl
+              : c.logoUrl,
+          address:
+            mergedSettings.address !== undefined
+              ? mergedSettings.address
+              : c.address,
+          ownerPhone:
+            mergedSettings.phone !== undefined
+              ? mergedSettings.phone
+              : c.ownerPhone,
+          ownerEmail:
+            mergedSettings.email !== undefined
+              ? mergedSettings.email
+              : c.ownerEmail,
+          settings: mergedSettings,
+        };
+      }
+      return c;
     });
+
+    // 2. Save master complexes FIRST so storage is immediately consistent
+    saveStoredData(STORAGE_KEYS.COMPLEXES, updatedComplexes);
+    saveStoredData(STORAGE_KEYS.SETTINGS, mergedSettings);
+    saveStoredData(STORAGE_KEYS.ACTIVE_COMPLEX_ID, targetId);
+    try {
+      sessionStorage.setItem(STORAGE_KEYS.ACTIVE_COMPLEX_ID, targetId);
+    } catch {}
+
+    // 3. Update React states
+    setSettings(mergedSettings);
+    setComplexes(updatedComplexes);
+
+    if (mergedSettings.themeMode) {
+      setTheme(mergedSettings.themeMode === "dark" ? "dark" : "light");
+    }
+    applyThemeToDocument(mergedSettings);
+
+    // 4. If URL has ?c= or ?slug=, update without reload so future syncs match
+    if (typeof window !== "undefined" && window.history?.replaceState) {
+      try {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has("c")) {
+          url.searchParams.set("c", nextSlug);
+          window.history.replaceState({}, "", url.toString());
+        } else if (url.searchParams.has("slug")) {
+          url.searchParams.set("slug", nextSlug);
+          window.history.replaceState({}, "", url.toString());
+        } else if (url.searchParams.has("complex")) {
+          url.searchParams.set("complex", nextSlug);
+          window.history.replaceState({}, "", url.toString());
+        }
+      } catch {}
+    }
+
     addAuditLog(
       "ACTUALIZAR_CONFIG",
       "Configuracion",
-      "singleton",
-      "Configuración del complejo actualizada",
+      targetId,
+      `Configuración del complejo "${newComplexName}" actualizada correctamente`,
     );
   };
 
@@ -1529,10 +1673,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const getPublicPortalUrl = (): string => {
+    const effectiveName = (settings?.complexName || activeComplex?.name || "").trim();
+    const custom = settings?.customPortalUrl?.trim();
+    const isCustomFullUrl = Boolean(custom && /^https?:\/\//i.test(custom));
+
     return buildComplexPortalUrl({
-      complexName: settings?.complexName || activeComplex?.name,
-      slug: activeComplex?.slug,
-      customPortalUrl: settings?.customPortalUrl,
+      complexName: effectiveName,
+      slug: activeComplex?.slug || (effectiveName ? slugify(effectiveName) : undefined),
+      customPortalUrl: isCustomFullUrl ? custom : undefined,
       id: activeComplexId,
     });
   };
@@ -1749,6 +1897,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setActiveComplexId(targetId);
     saveStoredData(STORAGE_KEYS.ACTIVE_COMPLEX_ID, targetId);
+    try {
+      sessionStorage.setItem(STORAGE_KEYS.ACTIVE_COMPLEX_ID, targetId);
+    } catch {}
+
+    if (typeof window !== "undefined" && window.history?.replaceState) {
+      try {
+        const url = new URL(window.location.href);
+        const targetSlug = target.slug || slugify(target.name) || target.id;
+        if (url.searchParams.has("c")) {
+          url.searchParams.set("c", targetSlug);
+          window.history.replaceState({}, "", url.toString());
+        } else if (url.searchParams.has("slug")) {
+          url.searchParams.set("slug", targetSlug);
+          window.history.replaceState({}, "", url.toString());
+        } else if (url.searchParams.has("complex")) {
+          url.searchParams.set("complex", targetSlug);
+          window.history.replaceState({}, "", url.toString());
+        }
+      } catch {}
+    }
 
     // Populate active states with target complex's isolated data
     const targetCourts = target.courts || [];
@@ -1891,11 +2059,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
             partial.ownerName !== undefined
               ? partial.ownerName.trim()
               : c.ownerName;
+          const nextLogo =
+            partial.logoUrl !== undefined
+              ? partial.logoUrl
+              : (partial.settings?.logoUrl !== undefined
+                ? partial.settings.logoUrl
+                : (c.logoUrl || currentSettings.logoUrl || ""));
 
           const mergedSettings: ComplexSettings = {
             ...currentSettings,
             ...(partial.settings || {}),
             complexName: nextName || currentSettings.complexName || c.name,
+            logoUrl: nextLogo,
             address: nextAddress || currentSettings.address || c.address,
             phone: nextPhone || currentSettings.phone || c.ownerPhone,
             whatsapp: nextPhone
@@ -1911,6 +2086,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
             ...partial,
             name: nextName,
             slug: nextSlug,
+            logoUrl: nextLogo,
             ownerName: nextOwner,
             ownerPhone: nextPhone,
             ownerEmail: nextEmail,

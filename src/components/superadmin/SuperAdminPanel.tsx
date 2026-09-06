@@ -445,20 +445,41 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onClose }) => 
               <div className="p-5 sm:p-6 space-y-4">
                 {/* Header Row */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
-                        {complex.slug || "complejo"}
-                      </span>
-                      {isCurrentActiveComplex && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800">
-                          Panel en Uso
+                  <div className="flex items-center space-x-3 min-w-0">
+                    {complex.settings?.logoUrl || complex.logoUrl ? (
+                      <img
+                        src={complex.settings?.logoUrl || complex.logoUrl}
+                        alt={complex.settings?.complexName || complex.name}
+                        className="w-11 h-11 rounded-xl object-cover ring-2 ring-slate-200 dark:ring-slate-700 shadow-sm shrink-0 bg-white dark:bg-slate-800"
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          backgroundColor:
+                            complex.settings?.primaryColor || "#4f46e5",
+                        }}
+                        className="w-11 h-11 rounded-xl text-white flex items-center justify-center font-black text-sm shadow-sm shrink-0 ring-1 ring-white/20"
+                      >
+                        {(complex.settings?.complexName || complex.name)
+                          .substring(0, 2)
+                          .toUpperCase()}
+                      </div>
+                    )}
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 font-mono">
+                          {complex.settings?.customPortalUrl || complex.slug || "complejo"}
                         </span>
-                      )}
+                        {isCurrentActiveComplex && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800">
+                            Panel en Uso
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight truncate">
+                        {complex.settings?.complexName || complex.name}
+                      </h3>
                     </div>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">
-                      {complex.name}
-                    </h3>
                   </div>
 
                   {/* Quick Action Buttons (Edit & Delete) */}
@@ -589,25 +610,29 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onClose }) => 
 
                 {/* Direct Links Preview & Share Box (Admin & Customer Portal) */}
                 {(() => {
+                  const effectiveName = complex.settings?.complexName || complex.name;
                   const adminUrl = buildComplexAdminUrl({
-                    complexName: complex.name,
+                    complexName: effectiveName,
                     slug: complex.slug,
                     customPortalUrl: complex.settings?.customPortalUrl,
                     id: complex.id,
                   });
                   const portalUrl = buildComplexPortalUrl({
-                    complexName: complex.name,
+                    complexName: effectiveName,
                     slug: complex.slug,
                     customPortalUrl: complex.settings?.customPortalUrl,
                     id: complex.id,
                   });
+                  const adminQuery = adminUrl.includes("?") ? adminUrl.substring(adminUrl.indexOf("?")) : adminUrl;
+                  const portalQuery = portalUrl.includes("?") ? portalUrl.substring(portalUrl.indexOf("?")) : portalUrl;
+
                   const cleanPhone = complex.ownerPhone ? complex.ownerPhone.replace(/[^0-9]/g, "") : "";
-                  const adminMsg = `¡Hola ${complex.ownerName || "Administrador"}! 👋 Te compartimos el link directo a tu *Panel de Administrador* de *${complex.name}* 🏟️:\n\n👉 ${adminUrl}\n\nDesde aquí podés administrar tus canchas, reservas y caja.`;
+                  const adminMsg = `¡Hola ${complex.ownerName || "Administrador"}! 👋 Te compartimos el link directo a tu *Panel de Administrador* de *${effectiveName}* 🏟️:\n\n👉 ${adminUrl}\n\nDesde aquí podés administrar tus canchas, reservas y caja.`;
                   const adminWhatsAppUrl = cleanPhone
                     ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(adminMsg)}`
                     : `https://api.whatsapp.com/send?text=${encodeURIComponent(adminMsg)}`;
 
-                  const portalMsg = `¡Hola! 👋 Reservá tu cancha online en *${complex.name}* 🏟️ de forma rápida ingresando a nuestro portal de reservas:\n\n👉 ${portalUrl}\n\n¡Elegí fecha, cancha y horario en segundos! ⚽🎾`;
+                  const portalMsg = `¡Hola! 👋 Reservá tu cancha online en *${effectiveName}* 🏟️ de forma rápida ingresando a nuestro portal de reservas:\n\n👉 ${portalUrl}\n\n¡Elegí fecha, cancha y horario en segundos! ⚽🎾`;
                   const portalWhatsAppUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(portalMsg)}`;
 
                   return (
@@ -645,7 +670,7 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onClose }) => 
                               </span>
                             </div>
                             <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                              ?view=admin&c={complex.slug || complex.id}
+                              {adminQuery}
                             </div>
                           </div>
                         </div>
@@ -707,7 +732,7 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onClose }) => 
                               </span>
                             </div>
                             <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                              ?view=portal&c={complex.settings?.customPortalUrl || complex.slug || complex.id}
+                              {portalQuery}
                             </div>
                           </div>
                         </div>

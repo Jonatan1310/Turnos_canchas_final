@@ -12,6 +12,8 @@ import {
   Save,
   RotateCcw,
   Sparkles,
+  QrCode,
+  Download,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { buildComplexPortalUrl, slugify, copyToClipboard } from "../../lib/slugify";
@@ -20,12 +22,14 @@ interface SharePortalModalProps {
   isOpen: boolean;
   onClose: () => void;
   customUrl?: string;
+  onOpenDirectly?: () => void;
 }
 
 export const SharePortalModal: React.FC<SharePortalModalProps> = ({
   isOpen,
   onClose,
   customUrl,
+  onOpenDirectly,
 }) => {
   const {
     settings,
@@ -37,12 +41,13 @@ export const SharePortalModal: React.FC<SharePortalModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [urlInput, setUrlInput] = useState("");
+  const [showQrCode, setShowQrCode] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
     const initial = customUrl || getPublicPortalUrl();
     setUrlInput(initial);
-  }, [isOpen, customUrl, settings.customPortalUrl, activeComplexId]);
+  }, [isOpen, customUrl, settings.customPortalUrl, activeComplexId, settings.complexName]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -88,6 +93,41 @@ export const SharePortalModal: React.FC<SharePortalModalProps> = ({
     const text = `¡Hola! 👋 Podés reservar tu cancha en línea en *${settings.complexName || "nuestro complejo"}* 🏟️ ingresando a nuestro portal de reservas 24/7:\n\n👉 ${currentActiveUrl}\n\n¡Elegí tu cancha y horario disponible en segundos! ⚽🎾`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
   };
+
+  const handleNativeShare = async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: `Portal de Reservas - ${settings.complexName || "Complejo Deportivo"}`,
+          text: `¡Hola! 👋 Podés reservar tu cancha en línea en *${settings.complexName || "nuestro complejo"}* 🏟️:\n👉 ${currentActiveUrl}\n\n¡Elegí tu horario en segundos! ⚽🎾`,
+          url: currentActiveUrl,
+        });
+      } catch (err) {
+        if ((err as Error)?.name !== "AbortError") {
+          console.warn("navigator.share error:", err);
+          await handleCopy();
+        }
+      }
+    } else {
+      await handleCopy();
+    }
+  };
+
+  const handleOpenInNewTab = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (typeof window !== "undefined") {
+      window.open(currentActiveUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const handleDirectNavigation = () => {
+    if (onOpenDirectly) {
+      onOpenDirectly();
+      onClose();
+    }
+  };
+
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(currentActiveUrl)}&margin=10`;
 
   return createPortal(
     <div
@@ -221,21 +261,109 @@ export const SharePortalModal: React.FC<SharePortalModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <button
               onClick={handleShareWhatsApp}
-              className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
+              className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer active:scale-98"
             >
               <Send className="w-4 h-4" />
               <span>Enviar por WhatsApp</span>
             </button>
 
-            <a
-              href={currentActiveUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-3.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all border border-slate-300 dark:border-slate-700"
+            {typeof navigator !== "undefined" && typeof navigator.share === "function" ? (
+              <button
+                onClick={handleNativeShare}
+                className="w-full py-3.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer active:scale-98"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>Compartir en Apps / Redes</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleCopy}
+                className="w-full py-3.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer active:scale-98"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-400" />
+                    <span>¡Enlace Copiado!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>Copiar Enlace</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* In-App Direct Open or New Tab */}
+            {onOpenDirectly && (
+              <button
+                onClick={handleDirectNavigation}
+                className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer active:scale-98"
+              >
+                <Globe className="w-4 h-4" />
+                <span>Ver Portal en el Sistema</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleOpenInNewTab}
+              className={`w-full py-3 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all border border-slate-300 dark:border-slate-700 cursor-pointer active:scale-98 ${
+                !onOpenDirectly ? "sm:col-span-2" : ""
+              }`}
             >
               <ExternalLink className="w-4 h-4 text-slate-500" />
-              <span>Abrir en Celular / Tab</span>
-            </a>
+              <span>Abrir en Nueva Pestaña</span>
+            </button>
+          </div>
+
+          {/* QR Code Section Toggle */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => setShowQrCode(!showQrCode)}
+              className="w-full py-2.5 px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-between transition-all border border-slate-200 dark:border-slate-700 cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <QrCode className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Código QR para Mostrador / Mesas / Folletos</span>
+              </div>
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-extrabold">
+                {showQrCode ? "Ocultar QR ▲" : "Ver Código QR ▼"}
+              </span>
+            </button>
+
+            {showQrCode && (
+              <div className="mt-3 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left animate-fadeIn shadow-xs">
+                <div className="p-2 bg-white rounded-xl border border-slate-200 shadow-sm shrink-0">
+                  <img
+                    src={qrImageUrl}
+                    alt="Código QR del Portal de Reservas"
+                    className="w-36 h-36 object-contain rounded-lg"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    Código QR de Acceso Instantáneo
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                    Tus clientes pueden escanear este código QR con la cámara de su celular para abrir directamente el portal de reservas de{" "}
+                    <strong>{settings.complexName}</strong>.
+                  </p>
+                  <div className="pt-1">
+                    <a
+                      href={qrImageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Abrir / Descargar Imagen QR</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Helpful Tip */}
@@ -251,4 +379,5 @@ export const SharePortalModal: React.FC<SharePortalModalProps> = ({
     document.body
   );
 };
+
 

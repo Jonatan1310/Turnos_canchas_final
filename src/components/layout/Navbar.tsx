@@ -245,6 +245,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         customUrl={getPublicPortalUrl()}
+        onOpenDirectly={onOpenPublicPortal}
       />
     </header>
   );

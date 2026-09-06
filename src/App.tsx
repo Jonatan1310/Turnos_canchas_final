@@ -337,7 +337,11 @@ const MainLayout: React.FC = () => {
 
             {activeTab === "reports" && <ReportsView />}
 
-            {activeTab === "settings" && <SettingsView />}
+            {activeTab === "settings" && (
+              <SettingsView
+                onOpenPublicPortal={() => setActiveTab("public_portal")}
+              />
+            )}
 
             {activeTab === "audit" && <AuditLogsView />}
           </div>

@@ -126,6 +126,12 @@ export function saveStoredData<T>(key: string, value: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
     if (typeof window !== "undefined") {
+      if (key === STORAGE_KEYS.ACTIVE_COMPLEX_ID && typeof value === "string") {
+        try {
+          sessionStorage.setItem(STORAGE_KEYS.ACTIVE_COMPLEX_ID, value);
+        } catch {}
+      }
+
       // 1. Dispatch custom DOM event for current window/tab listeners
       window.dispatchEvent(
         new CustomEvent("rm_app_sync_event", {
@@ -235,7 +241,29 @@ export function resolveActiveComplexId(complexList: TenantComplex[]): string {
         });
 
         if (match) {
+          try {
+            sessionStorage.setItem(STORAGE_KEYS.ACTIVE_COMPLEX_ID, match.id);
+            localStorage.setItem(STORAGE_KEYS.ACTIVE_COMPLEX_ID, match.id);
+          } catch {}
           return match.id;
+        }
+
+        // Fuzzy fallback match if exact slug doesn't match
+        const fuzzyMatch = complexList.find((c) => {
+          const cNameSlug = slugify(c.name || "");
+          const cSettingsNameSlug = slugify(c.settings?.complexName || "");
+          return (
+            Boolean(cNameSlug && (cNameSlug.includes(paramSlug) || paramSlug.includes(cNameSlug))) ||
+            Boolean(cSettingsNameSlug && (cSettingsNameSlug.includes(paramSlug) || paramSlug.includes(cSettingsNameSlug)))
+          );
+        });
+
+        if (fuzzyMatch) {
+          try {
+            sessionStorage.setItem(STORAGE_KEYS.ACTIVE_COMPLEX_ID, fuzzyMatch.id);
+            localStorage.setItem(STORAGE_KEYS.ACTIVE_COMPLEX_ID, fuzzyMatch.id);
+          } catch {}
+          return fuzzyMatch.id;
         }
       }
     } catch {}

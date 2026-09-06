@@ -13,6 +13,7 @@ import {
   PlusCircle,
   Smartphone,
   ShieldCheck,
+  Globe,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 
@@ -72,6 +73,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     { id: "payments", label: "Pagos & Cobros", icon: DollarSign },
     { id: "reports", label: "Reportes & Exportar", icon: BarChart3 },
+    {
+      id: "public_portal",
+      label: "Portal de Clientes",
+      icon: Globe,
+      isPublicPortal: true,
+      badgeText: "Público 24/7",
+    },
     { id: "settings", label: "Configuración", icon: Settings },
     { id: "audit", label: "Auditoría & Logs", icon: History },
   ];
@@ -181,14 +189,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         ? "text-blue-400"
                         : item.id === "superadmin"
                         ? "text-amber-400"
+                        : item.id === "public_portal"
+                        ? "text-emerald-400"
                         : "text-slate-400"
                     }`}
                   />
-                  <span className={item.id === "superadmin" ? "text-slate-200" : ""}>
+                  <span
+                    className={
+                      item.id === "superadmin"
+                        ? "text-slate-200 font-bold"
+                        : item.id === "public_portal"
+                        ? "text-emerald-300 font-bold"
+                        : ""
+                    }
+                  >
                     {item.label}
                   </span>
                 </div>
-                {item.badge !== undefined && typeof item.badge === "number" && item.badge > 0 ? (
+                {item.badgeText ? (
+                  <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    {item.badgeText}
+                  </span>
+                ) : item.badge !== undefined && typeof item.badge === "number" && item.badge > 0 ? (
                   <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                     {item.badge}
                   </span>

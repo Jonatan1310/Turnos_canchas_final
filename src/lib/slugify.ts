@@ -91,18 +91,17 @@ export function buildComplexPortalUrl(params: {
 
   const baseUrl = getCleanBasePath();
   
-  // Custom slug override or slug derived from complex name
-  let targetSlug = custom;
-  if (!targetSlug && params.slug) {
-    targetSlug = params.slug;
-  }
-  if (!targetSlug && params.complexName) {
-    targetSlug = slugify(params.complexName);
-  }
-  if (!targetSlug && params.id) {
-    targetSlug = params.id;
-  }
-  if (!targetSlug) {
+  // Primary priority: Slug derived from the administrator's configured complexName
+  let targetSlug = "";
+  if (params.complexName && params.complexName.trim()) {
+    targetSlug = slugify(params.complexName.trim());
+  } else if (params.slug && params.slug.trim()) {
+    targetSlug = slugify(params.slug.trim());
+  } else if (custom && !/^https?:\/\//i.test(custom)) {
+    targetSlug = slugify(custom);
+  } else if (params.id && params.id.trim()) {
+    targetSlug = params.id.trim();
+  } else {
     targetSlug = "portal";
   }
 
@@ -124,20 +123,15 @@ export function buildComplexAdminUrl(params: {
 
   const custom = params.customPortalUrl?.trim();
   let targetSlug = "";
-  // If customPortalUrl is NOT an external full url (e.g. it's a slug name)
-  if (custom && !/^https?:\/\//i.test(custom)) {
-    targetSlug = custom;
-  }
-  if (!targetSlug && params.slug) {
-    targetSlug = params.slug;
-  }
-  if (!targetSlug && params.complexName) {
-    targetSlug = slugify(params.complexName);
-  }
-  if (!targetSlug && params.id) {
-    targetSlug = params.id;
-  }
-  if (!targetSlug) {
+  if (params.complexName && params.complexName.trim()) {
+    targetSlug = slugify(params.complexName.trim());
+  } else if (params.slug && params.slug.trim()) {
+    targetSlug = slugify(params.slug.trim());
+  } else if (custom && !/^https?:\/\//i.test(custom)) {
+    targetSlug = slugify(custom);
+  } else if (params.id && params.id.trim()) {
+    targetSlug = params.id.trim();
+  } else {
     targetSlug = "complejo";
   }
 
