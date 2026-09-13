@@ -206,9 +206,25 @@ export function resolveActiveComplexId(complexList: TenantComplex[]): string {
   if (!complexList || complexList.length === 0) return "complex-central";
 
   if (typeof window !== "undefined") {
-    // 1. Highest priority: URL query parameters (e.g. ?c=slug or ?complex=slug or ?slug=...)
+    // 1. Highest priority: Explicit cid query parameter (e.g. ?cid=complex-central)
     try {
       const params = new URLSearchParams(window.location.search);
+      const cidParam = params.get("cid");
+      if (cidParam) {
+        const cleanCid = decodeURIComponent(cidParam).trim().toLowerCase();
+        const cidMatch = complexList.find(
+          (c) => (c.id || "").toLowerCase() === cleanCid
+        );
+        if (cidMatch) {
+          try {
+            sessionStorage.setItem(STORAGE_KEYS.ACTIVE_COMPLEX_ID, cidMatch.id);
+            localStorage.setItem(STORAGE_KEYS.ACTIVE_COMPLEX_ID, cidMatch.id);
+          } catch {}
+          return cidMatch.id;
+        }
+      }
+
+      // 2. URL slug query parameters (e.g. ?c=slug or ?complex=slug or ?slug=...)
       const urlParam =
         params.get("c") || params.get("complex") || params.get("slug");
       if (urlParam) {

@@ -91,10 +91,12 @@ export const PublicPortalView: React.FC<PublicPortalViewProps> = ({
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  // User Auth State for Public Portal
+  // User Auth State for Public Portal (Strict Session: leaving requires re-login)
   const [portalUser, setPortalUser] = useState<PortalUser | null>(() => {
     try {
-      const stored = localStorage.getItem("portal_active_user");
+      // Clean up legacy persistent localStorage if present
+      localStorage.removeItem("portal_active_user");
+      const stored = sessionStorage.getItem("portal_active_user");
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -107,7 +109,8 @@ export const PublicPortalView: React.FC<PublicPortalViewProps> = ({
   const handleLoginSuccess = (user: PortalUser) => {
     setPortalUser(user);
     try {
-      localStorage.setItem("portal_active_user", JSON.stringify(user));
+      sessionStorage.setItem("portal_active_user", JSON.stringify(user));
+      localStorage.removeItem("portal_active_user");
     } catch {
       // ignore
     }
@@ -123,6 +126,7 @@ export const PublicPortalView: React.FC<PublicPortalViewProps> = ({
   const handleLogout = () => {
     setPortalUser(null);
     try {
+      sessionStorage.removeItem("portal_active_user");
       localStorage.removeItem("portal_active_user");
     } catch {
       // ignore

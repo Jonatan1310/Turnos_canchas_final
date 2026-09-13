@@ -378,6 +378,9 @@ const MainLayout: React.FC = () => {
           handleEditBooking(b);
           setActiveTab("calendar");
         }}
+        onSelectCustomer={() => {
+          setActiveTab("customers");
+        }}
       />
     </div>
   );

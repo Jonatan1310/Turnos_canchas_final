@@ -106,7 +106,8 @@ export function buildComplexPortalUrl(params: {
   }
 
   const separator = baseUrl.endsWith("/") ? "" : "/";
-  return `${baseUrl}${separator}?view=portal&c=${encodeURIComponent(targetSlug)}`;
+  const complexIdParam = params.id ? `&cid=${encodeURIComponent(params.id)}` : "";
+  return `${baseUrl}${separator}?view=portal&c=${encodeURIComponent(targetSlug)}${complexIdParam}`;
 }
 
 /**
@@ -136,7 +137,8 @@ export function buildComplexAdminUrl(params: {
   }
 
   const separator = baseUrl.endsWith("/") ? "" : "/";
-  return `${baseUrl}${separator}?view=admin&c=${encodeURIComponent(targetSlug)}`;
+  const complexIdParam = params.id ? `&cid=${encodeURIComponent(params.id)}` : "";
+  return `${baseUrl}${separator}?view=admin&c=${encodeURIComponent(targetSlug)}${complexIdParam}`;
 }
 
 /**

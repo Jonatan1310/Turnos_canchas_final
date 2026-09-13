@@ -10,34 +10,52 @@ import {
   Clock,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { Booking } from "../../types";
 
 interface GlobalSearchModalProps {
-  onSelectBooking?: (bookingId: string) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
+  onSelectBooking?: (booking: Booking) => void;
   onSelectCustomer?: (customerId: string) => void;
 }
 
 export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
+  isOpen,
+  onClose,
   onSelectBooking,
   onSelectCustomer,
 }) => {
   const { searchOpen, setSearchOpen, bookings, customers, courts, formatPrice } = useApp();
   const [query, setQuery] = useState("");
 
+  const isVisible = isOpen !== undefined ? isOpen : searchOpen;
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    }
+    setSearchOpen(false);
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setSearchOpen(!searchOpen);
+        if (isVisible) {
+          handleClose();
+        } else {
+          setSearchOpen(true);
+        }
       }
-      if (e.key === "Escape" && searchOpen) {
-        setSearchOpen(false);
+      if (e.key === "Escape" && isVisible) {
+        handleClose();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [searchOpen, setSearchOpen]);
+  }, [isVisible, setSearchOpen]);
 
-  if (!searchOpen) return null;
+  if (!isVisible) return null;
 
   const cleanQuery = query.toLowerCase().trim();
 
@@ -82,7 +100,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             autoFocus
           />
           <button
-            onClick={() => setSearchOpen(false)}
+            onClick={handleClose}
             className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
           >
             <X className="w-5 h-5" />
@@ -127,7 +145,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                     key={cust.id}
                     onClick={() => {
                       if (onSelectCustomer) onSelectCustomer(cust.id);
-                      setSearchOpen(false);
+                      handleClose();
                     }}
                     className="p-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between cursor-pointer group transition-colors"
                   >
@@ -163,8 +181,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                     <div
                       key={book.id}
                       onClick={() => {
-                        if (onSelectBooking) onSelectBooking(book.id);
-                        setSearchOpen(false);
+                        if (onSelectBooking) onSelectBooking(book);
+                        handleClose();
                       }}
                       className="p-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between cursor-pointer group transition-colors"
                     >

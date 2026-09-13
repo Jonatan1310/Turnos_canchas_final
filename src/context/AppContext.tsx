@@ -306,10 +306,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(() => {
     try {
-      return (
-        sessionStorage.getItem(STORAGE_KEYS.SUPER_ADMIN_AUTH) === "true" ||
-        localStorage.getItem(STORAGE_KEYS.SUPER_ADMIN_AUTH) === "true"
-      );
+      // Strict session policy: clear any persistent localStorage token
+      localStorage.removeItem(STORAGE_KEYS.SUPER_ADMIN_AUTH);
+      return sessionStorage.getItem(STORAGE_KEYS.SUPER_ADMIN_AUTH) === "true";
     } catch {
       return false;
     }
@@ -1716,7 +1715,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsSuperAdmin(true);
       try {
         sessionStorage.setItem(STORAGE_KEYS.SUPER_ADMIN_AUTH, "true");
-        localStorage.setItem(STORAGE_KEYS.SUPER_ADMIN_AUTH, "true");
+        localStorage.removeItem(STORAGE_KEYS.SUPER_ADMIN_AUTH);
       } catch (e) {
         console.error("Storage error:", e);
       }

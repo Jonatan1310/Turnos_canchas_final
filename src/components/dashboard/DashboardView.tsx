@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Calendar,
   Users,
@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   XCircle,
   ArrowRight,
+  Trash2,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { ActiveTab } from "../layout/Sidebar";
@@ -31,8 +32,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSelectBookingToEdit,
   onSelectBookingToCancel,
 }) => {
-  const { bookings, courts, customers, waitlist, settings, activeUser, formatPrice } =
+  const { bookings, courts, customers, waitlist, settings, activeUser, formatPrice, deleteBooking } =
     useApp();
+
+  const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
 
   const formatAdminPrice = (val: number) => formatPrice(val, 'admin');
 
@@ -275,6 +278,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           Cancelar
                         </button>
                       )}
+
+                      <button
+                        onClick={() => setBookingToDelete(b)}
+                        className="p-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-semibold"
+                        title="Eliminar reserva del sistema"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 );
@@ -360,6 +371,51 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Modal: Confirm Delete Booking */}
+      {bookingToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="p-2.5 rounded-xl bg-rose-100 dark:bg-rose-950/60">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  ¿Eliminar Reserva?
+                </h3>
+                <p className="text-[11px] text-slate-500">Acción irreversible</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              ¿Estás seguro de que deseas eliminar permanentemente la reserva de{" "}
+              <span className="font-bold text-slate-900 dark:text-white">
+                {bookingToDelete.customerName}
+              </span>{" "}
+              ({bookingToDelete.startTime} - {bookingToDelete.endTime})?
+            </p>
+            <div className="flex justify-end space-x-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setBookingToDelete(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteBooking(bookingToDelete.id);
+                  setBookingToDelete(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-xs transition-colors"
+              >
+                Sí, Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
