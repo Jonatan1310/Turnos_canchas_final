@@ -10,7 +10,6 @@ import {
   Sparkles,
   AlertCircle,
   CheckCircle2,
-  KeyRound,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 
@@ -61,12 +60,6 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
         setErrorMessage(result.message);
       }
     }, 250);
-  };
-
-  const handleFillCredentials = () => {
-    setUsername("SuperAdmin");
-    setPassword("Super@Admin");
-    setErrorMessage("");
   };
 
   return createPortal(
@@ -131,9 +124,8 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
 
           {/* Username Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
-              <span>Usuario Super Admin</span>
-              <span className="text-[10px] text-slate-500 font-mono">SuperAdmin</span>
+            <label className="text-xs font-bold text-slate-300">
+              Usuario Super Admin
             </label>
             <div className="relative">
               <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -142,7 +134,7 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Ej: SuperAdmin"
+                placeholder="Ingrese su usuario"
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-800/80 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 rounded-xl text-sm text-white placeholder-slate-500 transition-all font-mono"
               />
             </div>
@@ -150,9 +142,8 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
 
           {/* Password Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
-              <span>Contraseña Maestra</span>
-              <span className="text-[10px] text-slate-500 font-mono">Super@Admin</span>
+            <label className="text-xs font-bold text-slate-300">
+              Contraseña Maestra
             </label>
             <div className="relative">
               <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -177,18 +168,6 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({
                 )}
               </button>
             </div>
-          </div>
-
-          {/* Auto-fill helper shortcut */}
-          <div className="flex items-center justify-between pt-1">
-            <button
-              type="button"
-              onClick={handleFillCredentials}
-              className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <KeyRound className="w-3 h-3" />
-              <span>Autocompletar credenciales</span>
-            </button>
           </div>
 
           {/* Submit Button */}

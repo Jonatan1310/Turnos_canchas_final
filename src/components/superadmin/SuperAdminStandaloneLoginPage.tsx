@@ -8,16 +8,10 @@ import {
   Sparkles,
   AlertCircle,
   CheckCircle2,
-  KeyRound,
   ArrowLeft,
-  Building2,
-  HelpCircle,
-  ExternalLink,
   Shield,
-  Layers,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { SUPER_ADMIN_CREDENTIALS } from "../../lib/license";
 
 interface SuperAdminStandaloneLoginPageProps {
   onExit: () => void;
@@ -55,12 +49,6 @@ export const SuperAdminStandaloneLoginPage: React.FC<
         setErrorMessage(result.message);
       }
     }, 300);
-  };
-
-  const handleFillCredentials = () => {
-    setUsername(SUPER_ADMIN_CREDENTIALS.username);
-    setPassword(SUPER_ADMIN_CREDENTIALS.password);
-    setErrorMessage("");
   };
 
   const complexName = settings.complexName || activeComplex?.name || "Complejo Deportivo";
@@ -139,9 +127,8 @@ export const SuperAdminStandaloneLoginPage: React.FC<
 
             {/* Username */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
-                <span>Usuario SuperAdmin</span>
-                <span className="text-[10px] text-slate-500 font-mono">SuperAdmin</span>
+              <label className="text-xs font-bold text-slate-300">
+                Usuario SuperAdmin
               </label>
               <div className="relative">
                 <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -149,7 +136,7 @@ export const SuperAdminStandaloneLoginPage: React.FC<
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="SuperAdmin"
+                  placeholder="Ingrese su usuario"
                   required
                   autoFocus
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-slate-700/80 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 rounded-2xl text-sm text-white placeholder-slate-500 focus:outline-none transition-all"
@@ -159,9 +146,8 @@ export const SuperAdminStandaloneLoginPage: React.FC<
 
             {/* Password */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
-                <span>Contraseña Maestra</span>
-                <span className="text-[10px] text-slate-500 font-mono">Super@Admin</span>
+              <label className="text-xs font-bold text-slate-300">
+                Contraseña Maestra
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -198,29 +184,6 @@ export const SuperAdminStandaloneLoginPage: React.FC<
               <span>{isLoading ? "Validando..." : "Ingresar al Panel SuperAdmin"}</span>
             </button>
           </form>
-
-          {/* Quick Credential Autofill Helper */}
-          <div className="pt-4 border-t border-slate-800/80 space-y-3">
-            <button
-              type="button"
-              onClick={handleFillCredentials}
-              className="w-full py-2.5 px-3 rounded-xl bg-slate-950/60 hover:bg-slate-950 border border-dashed border-indigo-500/40 hover:border-indigo-400 text-indigo-300 hover:text-indigo-200 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
-            >
-              <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-              <span>Autocompletar Credenciales de Demostración</span>
-            </button>
-
-            <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-              <div className="flex justify-between">
-                <span>Usuario:</span>
-                <code className="text-slate-200 font-bold font-mono">SuperAdmin</code>
-              </div>
-              <div className="flex justify-between">
-                <span>Contraseña:</span>
-                <code className="text-slate-200 font-bold font-mono">Super@Admin</code>
-              </div>
-            </div>
-          </div>
         </div>
       </main>
 
